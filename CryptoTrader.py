@@ -13,7 +13,6 @@ import json
 import matplotlib.pyplot as plt
 
 TESTING_MODE = False
-testing_kline_dict = {}
 tick = 30
 
 balance = 0.2
@@ -173,7 +172,6 @@ while True:
                 bm_dict[sym] = BinanceSocketManager(client)
                 conn_key = bm_dict[sym].start_multiplex_socket([sym.lower()+'@trade', sym.lower()+'@kline_1m'], process_m_message)
                 bm_dict[sym].start()
-            if not TESTING_MODE:
                 print("buying " + str(wallets[sym]) + " " + sym + " at " + str(prices_dict[sym]))
                 sar_diff = last_price - last_sar
                 print("buying. last_sar: " + str(last_sar) + " last_last_sar: " + str(last_last_sar) + " last_price: " + str(last_price) + ". Diff: " + str(
@@ -223,4 +221,3 @@ while True:
             plt.show()
             plt.savefig('gains.png')
         tick += 1
-    #time.sleep(38)

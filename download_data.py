@@ -3,8 +3,8 @@ from binance.client import Client
 from binance.helpers import date_to_milliseconds
 import time
 
-start = "1 Jan, 2018"
-end = "1 Feb, 2018"
+start = "1 Feb, 2018"
+end = "1 Mar, 2018"
 interval = Client.KLINE_INTERVAL_5MINUTE
 
 client = Client("", "")
@@ -26,4 +26,4 @@ for d in info["symbols"]:
             'w' # set file write mode
         ) as f:
             f.write(json.dumps(klines))
-        time.sleep(30)
+        time.sleep(10)

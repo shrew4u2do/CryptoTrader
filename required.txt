@@ -2,3 +2,4 @@ python-binance
 ta-lib
 numpy
 scipy
+matplotlib
