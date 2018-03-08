@@ -58,6 +58,7 @@ bm_dict = {}
 
 sar_dict = {}
 ema_dict = {}
+rsi_dict = {}
 
 client = Client(BINANCE_KEY, BINANCE_SECRET)
 
@@ -83,11 +84,9 @@ while True:
         prices_dict[price["symbol"]] = price["price"]
     print("UPDATING " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     for symbol in BTC_symbols:
-        if symbol in blacklist:
+        if symbol in blacklist or float(volume_dict[symbol]) < 100:
             continue
-        kline_dict[symbol] = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit='10')
-        if float(kline_dict[symbol][0][5]) == 0 or float(volume_dict[symbol]) < 100:
-            continue
+        kline_dict[symbol] = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_5MINUTE, limit='15')
 
         o = []
         h = []
@@ -113,13 +112,14 @@ while True:
         sar_dict[symbol] = sar
         ema = talib.EMA(inputs["close"], timeperiod=7)
         ema_dict[symbol] = ema
-        last_price = float(prices_dict[symbol])
+        rsi = talib.RSI(inputs["close"], timeperiod=14)
+        rsi_dict[symbol] = rsi
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
         vol_delta = linregress(range(len(obv)), obv).slope
         vol_delta_dict[symbol] = vol_delta
 
-        close_delta = float(kline_dict[symbol][-1][4])
+        close_delta = float(kline_dict[symbol][-2][4])
         close_delta_dict[symbol] = close_delta
 
     sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)[-10:]
@@ -127,7 +127,7 @@ while True:
         print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym])
         last_sar = float(sar_dict[sym].item(-1))
         last_last_sar = float(sar_dict[sym].item(-2))
-        last_ema = float(ema_dict[sym].item(-1))
+        last_ema = float(ema_dict[sym].item(-2))
         last_price = float(close_delta_dict[sym])
         if last_sar < last_price and last_last_sar > last_price and last_price > last_ema and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 5 and sym not in blacklist:  # BUY if we dont have it
@@ -146,7 +146,13 @@ while True:
             buy_count += 1
         else:
             sar_diff = last_price - last_sar
-            #print("Not buying. last_sar: " + str(last_sar) + " last_price: " + str(last_price) + ". Diff: " + str(sar_diff))
+            print(
+                "not buying. last_sar: " + str(last_sar) + " last_last_sar: " + str(last_last_sar) + " last_price: " + str(
+                    last_price) + " last_ema: " + str(last_ema) +  ". Diff: " + str(
+                    sar_diff))
+            print("last_sar < last_price: " + str(last_sar < last_price))
+            print("last_last_sar > last_price: " + str(last_last_sar > last_price))
+            print("last_price > last_ema: " + str(last_price > last_ema))
 
     sells = []
     for key, value in recent_purchases_dict.items():
@@ -154,14 +160,16 @@ while True:
         sar = sar_dict[key]
         last_sar = float(sar.item(-1))
         ema = ema_dict[key]
-        last_ema = float(ema.item(-1))
+        last_ema = float(ema.item(-2))
+        rsi = rsi_dict[key]
+        last_rsi = float(rsi.item(-1))
         last_price = float(close_delta_dict[key])
-        if last_sar > last_price and last_price < last_ema:
+        if (last_sar > last_price and last_price < last_ema) or last_rsi > 70:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             bought_amount = float(wallets[key])
             curr_price = float(prices_dict[key])
             btc_gain = bought_amount * curr_price
-            btc_gain -= (0.0005 * btc_gain) #  fee
+            btc_gain -= (0.0005 * btc_gain)  # binance fee
             balance += btc_gain
             gain += (btc_gain - (bought_amount * float(value)))
             wallets[key] = 0.0
