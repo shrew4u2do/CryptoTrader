@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 TESTING_MODE = False
 tick = 30
 
-balance = 0.2
+balance = 10.0
 gain = 0.0
 
 buy_count = 0
@@ -70,7 +70,7 @@ rsi_dict = {}
 
 client = Client(BINANCE_KEY, BINANCE_SECRET)
 if TESTING_MODE:
-    os.chdir("./training")
+    os.chdir("./training/Dec17")
     for file in glob.glob("*.json"):
         with open(file) as json_data:
             s = file.split('_')[1]
@@ -108,7 +108,6 @@ while True:
             if symbol in blacklist or float(volume_dict[symbol]) < 100:
                 continue
             kline_dict[symbol] = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_5MINUTE, limit='15')
-
         o = []
         h = []
         l = []
@@ -216,7 +215,7 @@ while True:
 
     if TESTING_MODE:
         gain_list.append(gain)
-        if tick == 8933:
+        if tick == 8899:
             plt.plot(gain_list)
             plt.show()
             plt.savefig('gains.png')
