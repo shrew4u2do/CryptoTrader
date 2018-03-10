@@ -18,7 +18,7 @@ tick = 30
 
 TRADE_LOGGING = True
 
-balance = 10.0
+balance = 0.2
 gain = 0.0
 
 buy_count = 0
@@ -57,7 +57,7 @@ blacklist = ["BTCUSDT", "NCASHBTC", "TRXBTC"]
 if TRADE_LOGGING:
     start_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(start_time + '.csv', 'a', newline='') as trade_log:
-        headers = ["Date", "Side", "Symbol", "Price", "Amount", "Balance", "Gain"]
+        headers = ["Date", "Side", "Symbol", "Last EMA", "Price", "Amount", "Balance", "Gain"]
         writer = csv.writer(trade_log)
         writer.writerow(headers)
 
@@ -89,13 +89,13 @@ def update_klines(klines):
             if not TESTING_MODE:
                 if symbol in blacklist or float(volume_dict[symbol]) < 100:
                     continue
-                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_5MINUTE, limit='30')
+                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_2HOUR, limit='30')
                 klines[symbol] = k
 
 
 client = Client(BINANCE_KEY, BINANCE_SECRET)
 if TESTING_MODE:
-    os.chdir("./training/Jan17")
+    os.chdir("./training/DecMar-2hr")
     for file in glob.glob("*.json"):
         with open(file) as json_data:
             s = file.split('_')[1]
@@ -163,7 +163,7 @@ while True:
 
         sar = talib.SAR(inputs["high"], inputs["low"])
         sar_dict[symbol] = sar
-        ema = talib.EMA(inputs["close"], timeperiod=7)
+        ema = talib.EMA(inputs["close"], timeperiod=14)
         ema_dict[symbol] = ema
         rsi = talib.RSI(inputs["close"], timeperiod=14)
         rsi_dict[symbol] = rsi
@@ -178,9 +178,12 @@ while True:
             print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym])
         last_sar = float(sar_dict[sym].item(-1))
         last_last_sar = float(sar_dict[sym].item(-2))
-        last_ema = float(ema_dict[sym].item(-2))
-        last_price = float(kline_dict[symbol][-1][4])
-        if last_price > last_ema and sym not in recent_purchases_dict and len(
+        last_ema = float(ema_dict[sym].item(-1))
+        if TESTING_MODE:
+            last_price = float(prices_dict[sym])
+        else:
+            last_price = float(kline_dict[sym][-1][4])
+        if last_sar < last_price and last_last_sar > last_price and last_price > last_ema and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.01:  # BUY if we dont have it
             buy_amount_btc = 0.3 * balance
             wallets[sym] = buy_amount_btc / float(prices_dict[sym])
@@ -200,7 +203,7 @@ while True:
                     t = datetime.datetime.utcfromtimestamp(
                         float(kline_dict[symbol][-1][6]) / 1000
                     ).strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "BUY", sym, prices_dict[sym], wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "BUY", sym, f"{last_ema:.8f}", prices_dict[sym], wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
@@ -212,11 +215,14 @@ while True:
         sar = sar_dict[key]
         last_sar = float(sar.item(-1))
         ema = ema_dict[key]
-        last_ema = float(ema.item(-2))
+        last_ema = float(ema.item(-1))
         rsi = rsi_dict[key]
         last_rsi = float(rsi.item(-1))
-        last_price = float(kline_dict[symbol][-1][4])
-        if last_price < last_ema:
+        if TESTING_MODE:
+            last_price = float(prices_dict[key])
+        else:
+            last_price = float(kline_dict[key][-1][4])
+        if (last_sar > last_price and last_price < last_ema) or last_rsi > 70:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             bought_amount = float(wallets[key])
             curr_price = float(prices_dict[key])
@@ -236,7 +242,7 @@ while True:
                     t = datetime.datetime.utcfromtimestamp(
                         float(kline_dict[symbol][-1][6]) / 1000
                     ).strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "SELL", key, prices_dict[key], bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "SELL", key, f"{last_ema:.8f}", prices_dict[key], bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
