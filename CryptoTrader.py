@@ -95,11 +95,27 @@ def update_klines(klines):
 
 client = Client(BINANCE_KEY, BINANCE_SECRET)
 if TESTING_MODE:
-    os.chdir("./training/DecMar-2hr")
+    os.chdir("./training/test")
+    for file in glob.glob("*ETH*.json"):  # assumes ETH will exist the whole period
+        with open(file) as json_data:
+            s = file.split('_')[1]
+            d = json.load(json_data)
+            sim_start = int(d[0][0])
+            sim_end = int(d[-1][6])
+
     for file in glob.glob("*.json"):
         with open(file) as json_data:
             s = file.split('_')[1]
             d = json.load(json_data)
+            first_appeared = int(d[0][0])
+            diff = first_appeared - sim_start
+            TWOHOURS_MS = 7200000
+            FIVEMIN_MS = 300000
+            zero_ints_needed = int(diff / TWOHOURS_MS)  # change when running a different interval.
+            if diff > 0:
+                empty_kline = [0, "0.0", "0.0", "0.0", "0.0", "0.0", 0, "0.0", 0, "0.0", "0.0", "0.0"]  # pad time before coin existed with empty kline
+                for x in range(0, zero_ints_needed):
+                    d.insert(0, empty_kline)
             kline_dict[s] = d
             if "BTC" in s:
                 BTC_symbols.append(s)
@@ -138,6 +154,8 @@ while True:
         v = []
         if TESTING_MODE:
             test_window = kline_dict[symbol][tick-30:tick]
+            if len(test_window) == 0:
+                sys.exit(0) # test window is empty. the sim is probably done...
             for interval in test_window:
                 o.append(float(interval[1]))
                 h.append(float(interval[2]))
@@ -164,7 +182,6 @@ while True:
             'close': numpy.asarray(c),
             'volume': numpy.asarray(v)
         }
-
         sar = talib.SAR(inputs["high"], inputs["low"])
         sar_dict[symbol] = sar
         ema = talib.EMA(inputs["close"], timeperiod=14)
@@ -181,7 +198,10 @@ while True:
         if not TESTING_MODE:
             print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym])
         last_sar = float(sar_dict[sym].item(-1))
-        last_last_sar = float(sar_dict[sym].item(-2))
+        try:
+            last_last_sar = float(sar_dict[sym].item(-2))
+        except IndexError:
+            continue
         last_ema = float(ema_dict[sym].item(-1))
         if TESTING_MODE:
             last_price = float(prices_dict[sym])

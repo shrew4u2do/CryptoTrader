@@ -5,7 +5,7 @@ import time
 import os.path
 
 #start = "14 hours ago UTC"
-start = "1 Mar, 2018"
+start = "1 Dec, 2017"
 end = "now"
 interval = Client.KLINE_INTERVAL_2HOUR
 s = date_to_milliseconds(start)
@@ -22,10 +22,13 @@ for d in info["symbols"]:
                 s,
                 e
             )):
+            print("Data for " + d["symbol"] + " exists. Skipping...")
             continue
         print(d["symbol"])
         klines = client.get_historical_klines(d["symbol"], interval, start, end)
-
+        if len(klines) == 0:
+            print("Data for " + d["symbol"] + " doesn't exist for this period. Skipping...")
+            continue
         # open a file with filename including symbol, interval and start and end converted to milliseconds
         with open(
             "Binance_{}_{}_{}-{}.json".format(
