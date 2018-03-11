@@ -114,7 +114,7 @@ if not TESTING_MODE:
     t = threading.Thread(target=update_klines, args=(kline_dict,))
     t.start()
     print("Waiting for initial data to populate...")
-    time.sleep(30)
+    time.sleep(20)
 while True:
     print("\nBTC BALANCE: " + f"{balance:.8f}")
     print("GAIN: " + f"{gain:.8f}")
@@ -146,12 +146,16 @@ while True:
                 v.append(float(interval[5]))
             prices_dict[symbol] = test_window[-1][4]
         else:
-            for interval in kline_dict[symbol]:
-                o.append(float(interval[1]))
-                h.append(float(interval[2]))
-                l.append(float(interval[3]))
-                c.append(float(interval[4]))
-                v.append(float(interval[5]))
+            try:
+                for interval in kline_dict[symbol]:
+                    o.append(float(interval[1]))
+                    h.append(float(interval[2]))
+                    l.append(float(interval[3]))
+                    c.append(float(interval[4]))
+                    v.append(float(interval[5]))
+            except KeyError as e:
+                print("Key error: {0}".format(e))
+                continue
 
         inputs = {
             'open': numpy.asarray(o),
