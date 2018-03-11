@@ -4,9 +4,10 @@ from binance.helpers import date_to_milliseconds
 import time
 import os.path
 
-start = "14 hours ago UTC"
-end = "now utc"
-interval = Client.KLINE_INTERVAL_5MINUTE
+#start = "14 hours ago UTC"
+start = "1 Dec, 2017"
+end = "1 Mar, 2018"
+interval = Client.KLINE_INTERVAL_2HOUR
 s = date_to_milliseconds(start)
 e = date_to_milliseconds(end)
 
@@ -36,4 +37,3 @@ for d in info["symbols"]:
             'w' # set file write mode
         ) as f:
             f.write(json.dumps(klines))
-        time.sleep(10)
