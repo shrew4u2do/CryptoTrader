@@ -204,9 +204,7 @@ while True:
                         float(kline_dict[symbol][tick - 30:tick][-1][6]) / 1000
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
-                    t = datetime.datetime.utcfromtimestamp(
-                        float(kline_dict[symbol][-1][6]) / 1000
-                    ).strftime('%Y-%m-%d %H:%M:%S')
+                    t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
                 trade = [t, "BUY", sym, f"{last_ema:.8f}", prices_dict[sym], wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
@@ -254,7 +252,6 @@ while True:
             sell_count += 1
     for s in sells:
         del recent_purchases_dict[s]
-        sells.remove(s)
 
     if TESTING_MODE:
         tick += 1

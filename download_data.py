@@ -5,8 +5,8 @@ import time
 import os.path
 
 #start = "14 hours ago UTC"
-start = "1 Dec, 2017"
-end = "1 Mar, 2018"
+start = "1 Mar, 2018"
+end = "now"
 interval = Client.KLINE_INTERVAL_2HOUR
 s = date_to_milliseconds(start)
 e = date_to_milliseconds(end)
