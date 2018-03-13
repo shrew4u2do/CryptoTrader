@@ -134,7 +134,7 @@ if not TESTING_MODE:
     print("Waiting for initial data to populate...")
     time.sleep(20)
 while True:
-    if not TESTING_MODE and th.isAlive():
+    if not TESTING_MODE and th.isAlive() is False:
         print("RESTARTING UPDATE")
         th = threading.Thread(target=update_klines, args=(kline_dict,))
         th.start()
@@ -250,11 +250,13 @@ while True:
         last_ema = float(ema.item(-1))
         rsi = rsi_dict[key]
         last_rsi = float(rsi.item(-1))
+        cci = cci_dict[key]
+        last_cci = float(cci.item(-1))
         if TESTING_MODE:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if (last_sar > last_price and last_price < last_ema) or last_rsi > 70:
+        if (last_sar > last_price and last_price < last_ema and last_cci < 100) or last_rsi > 70:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             bought_amount = float(wallets[key])
             curr_price = float(prices_dict[key])
