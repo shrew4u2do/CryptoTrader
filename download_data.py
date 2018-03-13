@@ -5,10 +5,11 @@ import time
 import os.path
 
 #start = "14 hours ago UTC"
-start = "1 Dec, 2017"
-end = "now"
+start = "1 Oct, 2017 UTC"
+end = "now UTC"
 interval = Client.KLINE_INTERVAL_2HOUR
-s = date_to_milliseconds(start)
+TWOHOURS_MS = 7200000
+s = date_to_milliseconds(start) - (TWOHOURS_MS*30) # need to start 30 intervals earlier because it needs historical data to work on
 e = date_to_milliseconds(end)
 
 client = Client("", "")

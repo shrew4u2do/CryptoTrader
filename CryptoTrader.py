@@ -52,7 +52,7 @@ gain_list = []
 BINANCE_KEY = sys.argv[1]
 BINANCE_SECRET = sys.argv[2]
 
-blacklist = ["BTCUSDT", "NCASHBTC", "TRXBTC"]
+blacklist = ["BTCUSDT"]
 
 if TRADE_LOGGING:
     start_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -208,7 +208,7 @@ while True:
         else:
             last_price = float(kline_dict[sym][-1][4])
         if last_sar < last_price and last_last_sar > last_price and last_price > last_ema and sym not in recent_purchases_dict and len(
-                recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.01:  # BUY if we dont have it
+                recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if we dont have it
             buy_amount_btc = 0.3 * balance
             wallets[sym] = buy_amount_btc / float(prices_dict[sym])
             wallets[sym] -= (0.0005 * float(wallets[sym]))  # binance fee
@@ -261,9 +261,7 @@ while True:
                         float(kline_dict[symbol][tick - 30:tick][-1][6]) / 1000
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
-                    t = datetime.datetime.utcfromtimestamp(
-                        float(kline_dict[symbol][-1][6]) / 1000
-                    ).strftime('%Y-%m-%d %H:%M:%S')
+                    t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
                 trade = [t, "SELL", key, f"{last_ema:.8f}", prices_dict[key], bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
