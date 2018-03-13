@@ -5,8 +5,8 @@ import time
 import os.path
 
 #start = "14 hours ago UTC"
-start = "1 Oct, 2017 UTC"
-end = "now UTC"
+start = "11 March 2018 12:41 pm EST"
+end = "now"
 interval = Client.KLINE_INTERVAL_2HOUR
 TWOHOURS_MS = 7200000
 s = date_to_milliseconds(start) - (TWOHOURS_MS*30) # need to start 30 intervals earlier because it needs historical data to work on
@@ -26,7 +26,7 @@ for d in info["symbols"]:
             print("Data for " + d["symbol"] + " exists. Skipping...")
             continue
         print(d["symbol"])
-        klines = client.get_historical_klines(d["symbol"], interval, start, end)
+        klines = client.get_historical_klines(d["symbol"], interval, str(s), str(e))
         if len(klines) == 0:
             print("Data for " + d["symbol"] + " doesn't exist for this period. Skipping...")
             continue
