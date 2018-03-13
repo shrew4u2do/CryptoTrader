@@ -75,6 +75,8 @@ bm_dict = {}
 sar_dict = {}
 ema_dict = {}
 rsi_dict = {}
+cci_dict = {}
+
 
 def update_klines(klines):
     while True:
@@ -127,11 +129,16 @@ else:
             BTC_symbols.append(d["symbol"])
 
 if not TESTING_MODE:
-    t = threading.Thread(target=update_klines, args=(kline_dict,))
-    t.start()
+    th = threading.Thread(target=update_klines, args=(kline_dict,))
+    th.start()
     print("Waiting for initial data to populate...")
     time.sleep(20)
 while True:
+    if not TESTING_MODE and th.isAlive():
+        print("RESTARTING UPDATE")
+        th = threading.Thread(target=update_klines, args=(kline_dict,))
+        th.start()
+
     print("\nBTC BALANCE: " + f"{balance:.8f}")
     print("GAIN: " + f"{gain:.8f}")
     print("BUYS: " + str(buy_count))
@@ -188,6 +195,8 @@ while True:
         ema_dict[symbol] = ema
         rsi = talib.RSI(inputs["close"], timeperiod=14)
         rsi_dict[symbol] = rsi
+        cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=14)
+        cci_dict[symbol] = cci
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
         vol_delta = linregress(range(len(obv)), obv).slope
@@ -200,6 +209,7 @@ while True:
         last_sar = float(sar_dict[sym].item(-1))
         try:
             last_last_sar = float(sar_dict[sym].item(-2))
+            last_cci = float(cci_dict[sym].item(-1))
         except IndexError:
             continue
         last_ema = float(ema_dict[sym].item(-1))
@@ -207,7 +217,7 @@ while True:
             last_price = float(prices_dict[sym])
         else:
             last_price = float(kline_dict[sym][-1][4])
-        if last_sar < last_price and last_last_sar > last_price and last_price > last_ema and sym not in recent_purchases_dict and len(
+        if last_cci > 100 and last_price > last_ema and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if we dont have it
             buy_amount_btc = 0.3 * balance
             wallets[sym] = buy_amount_btc / float(prices_dict[sym])
