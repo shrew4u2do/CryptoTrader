@@ -195,7 +195,7 @@ while True:
         ema_dict[symbol] = ema
         rsi = talib.RSI(inputs["close"], timeperiod=14)
         rsi_dict[symbol] = rsi
-        cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=14)
+        cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
         cci_dict[symbol] = cci
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
@@ -207,6 +207,7 @@ while True:
         if not TESTING_MODE:
             print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym])
         last_sar = float(sar_dict[sym].item(-1))
+        last_rsi = float(rsi_dict[sym].item(-1))
         try:
             last_last_sar = float(sar_dict[sym].item(-2))
             last_cci = float(cci_dict[sym].item(-1))
@@ -217,7 +218,7 @@ while True:
             last_price = float(prices_dict[sym])
         else:
             last_price = float(kline_dict[sym][-1][4])
-        if last_cci > 100 and last_price > last_ema and sym not in recent_purchases_dict and len(
+        if last_cci > 100 and last_price > last_ema and last_rsi < 70 and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if we dont have it
             buy_amount_btc = 0.3 * balance
             wallets[sym] = buy_amount_btc / float(prices_dict[sym])
