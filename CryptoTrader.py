@@ -221,7 +221,7 @@ while True:
             last_price = float(prices_dict[sym])
         else:
             last_price = float(kline_dict[sym][-1][4])
-        if last_cci > 100 and last_price > last_ema and last_rsi < 70 and sym not in recent_purchases_dict and len(
+        if last_cci > 100 and last_cci < 200 and last_price > last_ema and last_rsi < 70 and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if we dont have it
             if not TESTING_MODE:
                 if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
@@ -264,7 +264,7 @@ while True:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if (last_price < last_ema and last_cci < 100) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200:
+        if (last_price < last_ema and last_cci < 100) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             if last_rsi < 70:
                 rsi_overbought[key] = False
