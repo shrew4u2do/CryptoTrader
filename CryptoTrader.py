@@ -292,7 +292,7 @@ while True:
             sells.append(key)
             sell_count += 1
         if last_rsi > 70:
-            rsi_overbought[symbol] = True
+            rsi_overbought[key] = True
     for s in sells:
         del recent_purchases_dict[s]
 
