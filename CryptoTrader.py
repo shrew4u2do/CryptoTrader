@@ -57,7 +57,7 @@ blacklist = ["BTCUSDT"]
 if TRADE_LOGGING:
     start_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(start_time + '.csv', 'a', newline='') as trade_log:
-        headers = ["Date", "Side", "Symbol", "Last EMA", "Price", "Amount", "Balance", "Gain"]
+        headers = ["Date", "Side", "Symbol", "CCI", "RSI", "EMA", "SAR", "Price", "Amount", "Balance", "Gain"]
         writer = csv.writer(trade_log)
         writer.writerow(headers)
 
@@ -145,7 +145,9 @@ while True:
     print("SELLS: " + str(sell_count))
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
-        print(key + " " + value)
+        print(key + " Price: " + value + " EMA: " + f"{ema_dict[symbol].item(-1):.8f}" +
+              " SAR: " + f"{sar_dict[symbol].item(-1):.8f}" + " CCI: " + f"{cci_dict[symbol].item(-1):.8f}"
+              + " RSI: " + f"{rsi_dict[symbol].item(-1):.8f}")
     if not TESTING_MODE:
         print("UPDATING " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     else:
@@ -236,7 +238,7 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "BUY", sym, f"{last_ema:.8f}", prices_dict[sym], wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", prices_dict[sym], wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
@@ -275,7 +277,7 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "SELL", key, f"{last_ema:.8f}", prices_dict[key], bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "SELL", key, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", prices_dict[key], bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
