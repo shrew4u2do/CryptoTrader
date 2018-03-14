@@ -72,6 +72,7 @@ prices_dict = {}
 recent_purchases_dict = {}
 bm_dict = {}
 buy_cooldown_dict = {}
+rsi_overbought = {}
 
 sar_dict = {}
 ema_dict = {}
@@ -165,7 +166,7 @@ while True:
         if TESTING_MODE:
             test_window = kline_dict[symbol][tick-30:tick]
             if len(test_window) == 0:
-                sys.exit(0) # test window is empty. the sim is probably done...
+                sys.exit(0)  # test window is empty. the sim is probably done...
             for interval in test_window:
                 o.append(float(interval[1]))
                 h.append(float(interval[2]))
@@ -212,7 +213,6 @@ while True:
         last_sar = float(sar_dict[sym].item(-1))
         last_rsi = float(rsi_dict[sym].item(-1))
         try:
-            last_last_sar = float(sar_dict[sym].item(-2))
             last_cci = float(cci_dict[sym].item(-1))
         except IndexError:
             continue
@@ -231,6 +231,7 @@ while True:
             wallets[sym] -= (0.0005 * float(wallets[sym]))  # binance fee
             balance -= buy_amount_btc
             recent_purchases_dict[sym] = prices_dict[sym]
+            rsi_overbought[sym] = False
             #if not TESTING_MODE:
                 #bm_dict[sym] = BinanceSocketManager(client)
                 #conn_key = bm_dict[sym].start_multiplex_socket([sym.lower()+'@trade', sym.lower()+'@kline_1m'], process_m_message)
@@ -263,8 +264,10 @@ while True:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if (last_sar > last_price and last_price < last_ema and last_cci < 100) or last_rsi > 70:
+        if (last_price < last_ema and last_cci < 100) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200:
             print("SELLING " + key + " at gain/loss price " + str(profit))
+            if last_rsi < 70:
+                rsi_overbought[key] = False
             bought_amount = float(wallets[key])
             curr_price = float(prices_dict[key])
             btc_gain = bought_amount * curr_price
@@ -288,6 +291,8 @@ while True:
                     a = writer.writerow(trade)
             sells.append(key)
             sell_count += 1
+        if last_rsi > 70:
+            rsi_overbought[symbol] = True
     for s in sells:
         del recent_purchases_dict[s]
 
