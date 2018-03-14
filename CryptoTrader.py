@@ -71,6 +71,7 @@ vol_delta_dict = {}
 prices_dict = {}
 recent_purchases_dict = {}
 bm_dict = {}
+buy_cooldown_dict = {}
 
 sar_dict = {}
 ema_dict = {}
@@ -145,7 +146,7 @@ while True:
     print("SELLS: " + str(sell_count))
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
-        print(key + "Purchased Price: " + value + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
+        print(key + " Purchased Price: " + value + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
               " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}"
               + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
@@ -222,6 +223,9 @@ while True:
             last_price = float(kline_dict[sym][-1][4])
         if last_cci > 100 and last_price > last_ema and last_rsi < 70 and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if we dont have it
+            if not TESTING_MODE:
+                if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
+                    continue
             buy_amount_btc = 0.3 * balance
             wallets[sym] = buy_amount_btc / float(prices_dict[sym])
             wallets[sym] -= (0.0005 * float(wallets[sym]))  # binance fee
@@ -268,7 +272,8 @@ while True:
             balance += btc_gain
             gain += (btc_gain - (bought_amount * float(value)))
             wallets[key] = 0.0
-            #if not TESTING_MODE:
+            if not TESTING_MODE:
+                buy_cooldown_dict[key] = datetime.datetime.now() + datetime.timedelta(minutes=10)
                 #bm_dict[key].close()
             if TRADE_LOGGING:
                 if TESTING_MODE:
