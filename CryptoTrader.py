@@ -145,7 +145,7 @@ while True:
     print("SELLS: " + str(sell_count))
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
-        print(key + " Price: " + value + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
+        print(key + "Purchased Price: " + value + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
               " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}"
               + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
