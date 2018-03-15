@@ -202,6 +202,8 @@ while True:
         rsi_dict[symbol] = rsi
         cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
         cci_dict[symbol] = cci
+        if symbol not in cci_overbought:
+            cci_overbought[symbol] = True
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
         vol_delta = linregress(range(len(obv)), obv).slope
@@ -249,7 +251,7 @@ while True:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
             buy_count += 1
-        cci_overbought[sym] = last_cci < 100
+        cci_overbought[sym] = last_cci > 100
 
     sells = []
     for key, value in recent_purchases_dict.items():
@@ -295,7 +297,7 @@ while True:
             sell_count += 1
         if last_rsi > 70:
             rsi_overbought[key] = True
-        cci_overbought[key] = cci.item(-1) < 100
+        cci_overbought[key] = last_cci > 100
     for s in sells:
         del recent_purchases_dict[s]
 
