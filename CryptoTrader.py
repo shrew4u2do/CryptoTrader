@@ -73,6 +73,7 @@ recent_purchases_dict = {}
 bm_dict = {}
 buy_cooldown_dict = {}
 rsi_overbought = {}
+cci_overbought = {}
 
 sar_dict = {}
 ema_dict = {}
@@ -221,8 +222,8 @@ while True:
             last_price = float(prices_dict[sym])
         else:
             last_price = float(kline_dict[sym][-1][4])
-        if last_cci > 100 and last_cci < 200 and last_price > last_ema and last_rsi < 70 and sym not in recent_purchases_dict and len(
-                recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if we dont have it
+        if 100 < last_cci < 200 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
+                recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
             if not TESTING_MODE:
                 if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
                     continue
@@ -248,6 +249,7 @@ while True:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
             buy_count += 1
+        cci_overbought[sym] = last_cci < 100
 
     sells = []
     for key, value in recent_purchases_dict.items():
@@ -293,6 +295,7 @@ while True:
             sell_count += 1
         if last_rsi > 70:
             rsi_overbought[key] = True
+        cci_overbought[key] = cci.item(-1) < 100
     for s in sells:
         del recent_purchases_dict[s]
 
