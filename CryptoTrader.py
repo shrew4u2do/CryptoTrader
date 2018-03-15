@@ -57,7 +57,8 @@ blacklist = ["BTCUSDT"]
 if TRADE_LOGGING:
     start_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(start_time + '.csv', 'a', newline='') as trade_log:
-        headers = ["Date", "Side", "Symbol", "CCI", "RSI", "EMA", "SAR", "Price", "Amount", "Balance", "Gain"]
+        #headers = ["Date", "Side", "Symbol", "CCI", "RSI", "EMA", "SAR", "Price", "Amount", "Balance", "Gain"]
+        headers = ["Date", "Side", "Symbol", "MFI", "CCI", "CMO", "Price", "Amount", "Balance", "Gain"]
         writer = csv.writer(trade_log)
         writer.writerow(headers)
 
@@ -79,7 +80,8 @@ sar_dict = {}
 ema_dict = {}
 rsi_dict = {}
 cci_dict = {}
-
+mfi_dict = {}
+cmo_dict = {}
 
 def update_klines(klines):
     while True:
@@ -150,7 +152,7 @@ while True:
     for key, value in recent_purchases_dict.items():
         print(key + " Purchased Price: " + value + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
               " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}"
-              + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
+              + " RSI: " + f"{rsi_dict[key].item(-1):.8f}" + " MFI: " + f"{mfi_dict[key].item(-1):.8f}" + " CMO: " + f"{cmo_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
         print("UPDATING " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     else:
@@ -205,6 +207,11 @@ while True:
         if symbol not in cci_overbought:
             cci_overbought[symbol] = True
 
+        mfi = talib.MFI(inputs["high"], inputs["low"], inputs["close"], inputs["volume"], timeperiod=14)
+        mfi_dict[symbol] = mfi
+        cmo = talib.CMO(inputs["close"], timeperiod=14)
+        cmo_dict[symbol] = cmo
+
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
         vol_delta = linregress(range(len(obv)), obv).slope
         vol_delta_dict[symbol] = vol_delta
@@ -212,9 +219,15 @@ while True:
     sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)[-10:]
     for sym in sorted_vol_delta_list:
         if not TESTING_MODE:
-            print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym])
+            #print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym])
+            print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[
+                sym] + " MFI: " + str(f"{mfi_dict[sym].item(-1):.8f}") + " CCI: " + str(
+                f"{cci_dict[sym].item(-1):.8f}") + " CMO: " + str(f"{cmo_dict[sym].item(-1):.8f}"))
+
         last_sar = float(sar_dict[sym].item(-1))
         last_rsi = float(rsi_dict[sym].item(-1))
+        last_mfi = float(mfi_dict[sym].item(-1))
+        last_cmo = float(cmo_dict[sym].item(-1))
         try:
             last_cci = float(cci_dict[sym].item(-1))
         except IndexError:
@@ -224,8 +237,10 @@ while True:
             last_price = float(prices_dict[sym])
         else:
             last_price = float(kline_dict[sym][-1][4])
-        if 100 < last_cci < 200 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
+        if last_cci < -100 and last_mfi < 20 and last_cmo < -50 and sym not in recent_purchases_dict and len(
                 recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+        #if 100 < last_cci < 200 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
+              #  recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
             if not TESTING_MODE:
                 if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
                     continue
@@ -246,7 +261,9 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
+                #trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "BUY", sym, f"{last_mfi:.8f}", f"{last_cmi:.8f}", f"{last_cmo:.8f}",
+                         f"{last_price:.8f}", wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
@@ -264,11 +281,16 @@ while True:
         last_rsi = float(rsi.item(-1))
         cci = cci_dict[key]
         last_cci = float(cci.item(-1))
+        mfi = mfi_dict[key]
+        last_mfi = float(mfi.item(-1))
+        cmo = cmo_dict[key]
+        last_cmo = float(cmo.item(-1))
         if TESTING_MODE:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if (last_price < last_ema and last_cci < 100) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200:
+        if last_cci > 100 and last_mfi > 80 and last_cmo > 50:
+        #if (last_price < last_ema and last_cci < 100) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             if last_rsi < 70:
                 rsi_overbought[key] = False
@@ -289,7 +311,9 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "SELL", key, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
+                #trade = [t, "SELL", key, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "SELL", sym, f"{last_mfi:.8f}", f"{last_cmi:.8f}", f"{last_cmo:.8f}",
+                         f"{last_price:.8f}", wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
