@@ -276,7 +276,7 @@ while True:
             gain += (btc_gain - (bought_amount * float(value)))
             wallets[key] = 0.0
             if not TESTING_MODE:
-                buy_cooldown_dict[key] = datetime.datetime.now() + datetime.timedelta(minutes=10)
+                buy_cooldown_dict[key] = datetime.datetime.now() + datetime.timedelta(minutes=60)
                 #bm_dict[key].close()
             if TRADE_LOGGING:
                 if TESTING_MODE:
