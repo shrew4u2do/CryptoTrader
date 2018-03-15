@@ -196,7 +196,7 @@ while True:
         }
         sar = talib.SAR(inputs["high"], inputs["low"])
         sar_dict[symbol] = sar
-        ema = talib.EMA(inputs["close"], timeperiod=14)
+        ema = talib.DEMA(inputs["close"], timeperiod=14)
         ema_dict[symbol] = ema
         rsi = talib.RSI(inputs["close"], timeperiod=14)
         rsi_dict[symbol] = rsi
