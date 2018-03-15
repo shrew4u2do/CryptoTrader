@@ -246,7 +246,7 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", prices_dict[sym], wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
@@ -289,7 +289,7 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "SELL", key, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", prices_dict[key], bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "SELL", key, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", bought_amount, f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
