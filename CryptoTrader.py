@@ -300,6 +300,7 @@ while True:
         last_rsi = float(rsi.item(-1))
         cci = cci_dict[key]
         last_cci = float(cci.item(-1))
+        cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
         if TESTING_MODE:
             last_price = float(prices_dict[key])
         else:
