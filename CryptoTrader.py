@@ -12,6 +12,7 @@ import os
 import json
 import csv
 import threading
+import collections
 
 TESTING_MODE = False
 tick = 30
@@ -78,13 +79,14 @@ bm_dict = {}
 buy_cooldown_dict = {}
 rsi_overbought = {}
 cci_overbought = {}
+cci_history_dict = {}
 
 sar_dict = {}
 ema_dict = {}
 rsi_dict = {}
 cci_dict = {}
 
-def update_klines(klines):
+def update_klines(klines, cci_history_dict):
     while True:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         tickers = client.get_ticker()
@@ -99,6 +101,33 @@ def update_klines(klines):
                     continue
                 k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_2HOUR, limit='30')
                 klines[symbol] = k
+                o = []
+                h = []
+                l = []
+                c = []
+                v = []
+                try:
+                    for interval in klines[symbol]:
+                        o.append(float(interval[1]))
+                        h.append(float(interval[2]))
+                        l.append(float(interval[3]))
+                        c.append(float(interval[4]))
+                        v.append(float(interval[5]))
+                except KeyError as e:
+                    print("Key error: {0}".format(e))
+                    continue
+
+                inputs = {
+                    'open': numpy.asarray(o),
+                    'high': numpy.asarray(h),
+                    'low': numpy.asarray(l),
+                    'close': numpy.asarray(c),
+                    'volume': numpy.asarray(v)
+                }
+                cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
+                if symbol not in cci_history_dict:
+                    cci_history_dict[symbol] = collections.deque(maxlen=8)
+                cci_history_dict[symbol].append(cci.item(-1))
 
 
 client = Client(BINANCE_KEY, BINANCE_SECRET)
@@ -135,7 +164,7 @@ else:
             BTC_symbols.append(d["symbol"])
 
 if not TESTING_MODE:
-    th = threading.Thread(target=update_klines, args=(kline_dict,))
+    th = threading.Thread(target=update_klines, args=(kline_dict,cci_history_dict))
     th.start()
     print("Waiting for initial data to populate...")
     time.sleep(20)
@@ -151,8 +180,9 @@ while True:
     print("SELLS: " + str(sell_count))
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
+        cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
         print(key + " Purchased Price: " + value + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
-              " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}"
+              " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}" + " CCI Slope: " + f"{cci_slope:.8f}"
               + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
         print("UPDATING " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -199,7 +229,7 @@ while True:
         }
         sar = talib.SAR(inputs["high"], inputs["low"])
         sar_dict[symbol] = sar
-        ema = talib.EMA(inputs["close"], timeperiod=14)
+        ema = talib.TEMA(inputs["close"], timeperiod=9)
         ema_dict[symbol] = ema
         rsi = talib.RSI(inputs["close"], timeperiod=14)
         rsi_dict[symbol] = rsi
@@ -214,9 +244,10 @@ while True:
 
     sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)[-10:]
     for sym in sorted_vol_delta_list:
+        cci_slope = linregress(range(len(cci_history_dict[sym])), cci_history_dict[sym]).slope
         if not TESTING_MODE:
             print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym] + " EMA: " + f"{ema_dict[sym].item(-1):.8f}" +
-              " SAR: " + f"{sar_dict[sym].item(-1):.8f}" + " CCI: " + f"{cci_dict[sym].item(-1):.8f}"
+              " SAR: " + f"{sar_dict[sym].item(-1):.8f}" + " CCI: " + f"{cci_dict[sym].item(-1):.8f}" + " CCI Slope: " + f"{cci_slope:.8f}"
               + " RSI: " + f"{rsi_dict[sym].item(-1):.8f}")
         last_sar = float(sar_dict[sym].item(-1))
         last_rsi = float(rsi_dict[sym].item(-1))
@@ -273,7 +304,7 @@ while True:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if (last_price < last_ema and last_cci < 100) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200:
+        if (last_price < last_ema and last_cci < 95) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200 or cci_slope < -0.2:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             if last_rsi < 70:
                 rsi_overbought[key] = False
