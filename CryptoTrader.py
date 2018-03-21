@@ -14,12 +14,48 @@ import csv
 import threading
 import collections
 
+TRADE_LOGGING = True
+
+
 TESTING_MODE = False
 tick = 30
 
-TRADE_LOGGING = True
+LIVE_MODE = True
+precision = 5
 
-balance = 0.2
+VIRTUAL_MODE = False
+
+if sum(map(bool, [TESTING_MODE,LIVE_MODE,VIRTUAL_MODE])) != 1:
+    print("Enable only one of testing, live, or virtual modes")
+    sys.exit(0)
+
+if LIVE_MODE:
+    live_confirm = input('Entering live trading mode...continue? [y/n]: ')
+    if live_confirm != "y":
+        print("Exiting")
+        sys.exit(0)
+
+wallets = {}
+filters = {}
+
+BINANCE_KEY = sys.argv[1]
+BINANCE_SECRET = sys.argv[2]
+client = Client(BINANCE_KEY, BINANCE_SECRET)
+
+if TESTING_MODE or VIRTUAL_MODE:
+    balance = 0.2
+else:
+    info = client.get_account()
+    balances = info["balances"]
+    btc = next((item for item in balances if item["asset"] == "BTC"))
+    balance = float(btc["free"])
+    start_balance = balance
+    for w in balances:
+        wallets[w["asset"]] = w["free"]
+    ce = client.get_exchange_info()
+    for l in ce["symbols"]:
+        filters[l["symbol"]] = l["filters"]
+
 gain = 0.0
 
 buy_count = 0
@@ -54,8 +90,7 @@ def process_m_message(msg):
 
 gain_list = []
 
-BINANCE_KEY = sys.argv[1]
-BINANCE_SECRET = sys.argv[2]
+
 
 blacklist = ["BTCUSDT"]
 
@@ -67,7 +102,7 @@ if TRADE_LOGGING:
         writer.writerow(headers)
 
 
-wallets = {}
+
 
 BTC_symbols = []
 kline_dict = {}
@@ -95,6 +130,14 @@ def update_klines(klines, cci_history_dict):
             prices_dict[price["symbol"]] = price["price"]
         for sym in tickers:
             volume_dict[sym["symbol"]] = sym["quoteVolume"]
+        if LIVE_MODE:
+            info = client.get_account()
+            balances = info["balances"]
+            for w in balances:
+                wallets[w["asset"]] = w["free"]
+                if w["asset"] == "BTC":
+                    global balance
+                    balance = float(w["free"])
         for symbol in BTC_symbols:
             if not TESTING_MODE:
                 if symbol in blacklist or float(volume_dict[symbol]) < 100:
@@ -130,7 +173,7 @@ def update_klines(klines, cci_history_dict):
                 cci_history_dict[symbol].append(cci.item(-1))
 
 
-client = Client(BINANCE_KEY, BINANCE_SECRET)
+
 if TESTING_MODE:
     os.chdir("./training/test")
     for file in glob.glob("*ETH*.json"):  # assumes ETH will exist the whole period
@@ -174,6 +217,8 @@ while True:
         th = threading.Thread(target=update_klines, args=(kline_dict,))
         th.start()
 
+    if LIVE_MODE:
+        gain = float(wallets["BTC"]) - float(start_balance)
     print("\nBTC BALANCE: " + f"{balance:.8f}")
     print("GAIN: " + f"{gain:.8f}")
     print("BUYS: " + str(buy_count))
@@ -181,7 +226,7 @@ while True:
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
         cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
-        print(key + " Purchased Price: " + value + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
+        print(key + " Purchased Price: " + f"{value:.8f}" + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
               " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}" + " CCI Slope: " + f"{cci_slope:.8f}"
               + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
@@ -265,11 +310,25 @@ while True:
             if not TESTING_MODE:
                 if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
                     continue
-            buy_amount_btc = 0.3 * balance
-            wallets[sym] = buy_amount_btc / float(prices_dict[sym])
-            wallets[sym] -= (0.0005 * float(wallets[sym]))  # binance fee
-            balance -= buy_amount_btc
-            recent_purchases_dict[sym] = prices_dict[sym]
+            if VIRTUAL_MODE or TESTING_MODE:
+                buy_amount_btc = 0.3 * balance
+                wallets[sym.split("BTC")[0]] = buy_amount_btc / last_price
+                wallets[sym.split("BTC")[0]] -= (0.0005 * float(wallets[sym.split("BTC")[0]]))  # binance fee
+                balance -= buy_amount_btc
+            elif LIVE_MODE:
+                buy_amount_btc = 0.3 * float(wallets["BTC"])
+                buy = buy_amount_btc / last_price
+                step = float(filters[sym][1]["stepSize"])
+                m = float(buy) % step
+                a = float(buy) - m
+                amt_str = "{:0.0{}f}".format(a, precision)
+                order = client.order_market_buy(symbol=sym, quantity=amt_str)
+                info = client.get_account()
+                balances = info["balances"]
+                for w in balances:
+                    wallets[w["asset"]] = w["free"]
+
+            recent_purchases_dict[sym] = last_price
             rsi_overbought[sym] = False
             if not TESTING_MODE:
                 bm_dict[sym] = BinanceSocketManager(client)
@@ -282,7 +341,7 @@ while True:
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", wallets[sym], f"{balance:.8f}", f"{gain:.8f}"]
+                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_price:.8f}", wallets[sym.split("BTC")[0]], f"{balance:.8f}", f"{gain:.8f}"]
                 with open(start_time + '.csv', 'a', newline='') as trade_log:
                     writer = csv.writer(trade_log)
                     a = writer.writerow(trade)
@@ -309,13 +368,23 @@ while True:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             if last_rsi < 70:
                 rsi_overbought[key] = False
-            bought_amount = float(wallets[key])
-            curr_price = float(prices_dict[key])
-            btc_gain = bought_amount * curr_price
-            btc_gain -= (0.0005 * btc_gain)  # binance fee
-            balance += btc_gain
-            gain += (btc_gain - (bought_amount * float(value)))
-            wallets[key] = 0.0
+            bought_amount = float(wallets[key.split("BTC")[0]])
+            if VIRTUAL_MODE or TESTING_MODE:
+                btc_gain = bought_amount * last_price
+                btc_gain -= (0.0005 * btc_gain)  # binance fee
+                balance += btc_gain
+                gain += (btc_gain - (bought_amount * float(value)))
+                wallets[key.split("BTC")[0]] = 0.0
+            elif LIVE_MODE:
+                step = float(filters[key][1]["stepSize"])
+                m = float(bought_amount) % step
+                a = float(bought_amount) - m
+                amt_str = "{:0.0{}f}".format(a, precision)
+                order = client.order_market_sell(symbol=key, quantity=amt_str)
+                info = client.get_account()
+                balances = info["balances"]
+                for w in balances:
+                    wallets[w["asset"]] = w["free"]
             if not TESTING_MODE:
                 buy_cooldown_dict[key] = datetime.datetime.now() + datetime.timedelta(minutes=60)
                 bm_dict[key].close()
