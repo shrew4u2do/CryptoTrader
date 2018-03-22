@@ -20,10 +20,10 @@ TRADE_LOGGING = True
 TESTING_MODE = False
 tick = 30
 
-LIVE_MODE = True
+LIVE_MODE = False
 precision = 5
 
-VIRTUAL_MODE = False
+VIRTUAL_MODE = True
 
 if sum(map(bool, [TESTING_MODE,LIVE_MODE,VIRTUAL_MODE])) != 1:
     print("Enable only one of testing, live, or virtual modes")
@@ -120,6 +120,7 @@ sar_dict = {}
 ema_dict = {}
 rsi_dict = {}
 cci_dict = {}
+boll_dict = {}
 
 def update_klines(klines, cci_history_dict):
     while True:
@@ -142,7 +143,7 @@ def update_klines(klines, cci_history_dict):
             if not TESTING_MODE:
                 if symbol in blacklist or float(volume_dict[symbol]) < 100:
                     continue
-                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_2HOUR, limit='30')
+                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR, limit='30')
                 klines[symbol] = k
                 o = []
                 h = []
@@ -282,12 +283,14 @@ while True:
         cci_dict[symbol] = cci
         if symbol not in cci_overbought:
             cci_overbought[symbol] = True
+        upperband, middleband, lowerband = talib.BBANDS(inputs["close"], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+        boll_dict[symbol] = [upperband, middleband, lowerband]
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
         vol_delta = linregress(range(len(obv)), obv).slope
         vol_delta_dict[symbol] = vol_delta
 
-    sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)[-10:]
+    sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)[-20:]
     for sym in sorted_vol_delta_list:
         cci_slope = linregress(range(len(cci_history_dict[sym])), cci_history_dict[sym]).slope
         if not TESTING_MODE:
@@ -296,17 +299,23 @@ while True:
               + " RSI: " + f"{rsi_dict[sym].item(-1):.8f}")
         last_sar = float(sar_dict[sym].item(-1))
         last_rsi = float(rsi_dict[sym].item(-1))
+        last_last_rsi = float(rsi_dict[sym].item(-2))
+        last_last_boll_l = float(boll_dict[sym][0].item(-2))
+        last_boll_l = float(boll_dict[sym][0].item(-1))
         try:
             last_cci = float(cci_dict[sym].item(-1))
         except IndexError:
             continue
         last_ema = float(ema_dict[sym].item(-1))
+        last_last_price = float(kline_dict[sym][-2][4])
         if TESTING_MODE:
             last_price = float(prices_dict[sym])
         else:
             last_price = float(kline_dict[sym][-1][4])
-        if 100 < last_cci < 180 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
-                recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+        if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
+                recent_purchases_dict) < 10 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+        #if 100 < last_cci < 180 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
+        #        recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
             if not TESTING_MODE:
                 if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
                     continue
@@ -360,11 +369,14 @@ while True:
         cci = cci_dict[key]
         last_cci = float(cci.item(-1))
         cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
+        last_boll_l = float(boll_dict[sym][0].item(-1))
+        last_boll_h = float(boll_dict[sym][2].item(-1))
         if TESTING_MODE:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if (last_price < last_ema and last_cci < 95) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200 or cci_slope < -0.2:
+        if last_price > last_boll_h or last_price < (last_boll_l - 4e-8):
+        #if (last_price < last_ema and last_cci < 95) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200 or cci_slope < -0.2:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             if last_rsi < 70:
                 rsi_overbought[key] = False
