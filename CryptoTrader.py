@@ -13,6 +13,7 @@ import json
 import csv
 import threading
 import collections
+import pandas as pd
 
 TRADE_LOGGING = True
 
@@ -121,6 +122,13 @@ ema_dict = {}
 rsi_dict = {}
 cci_dict = {}
 boll_dict = {}
+
+def BBANDS(real, timeperiod=5, nbdevup=2, nbdevdn=2):
+    ma = pd.rolling_mean(real, timeperiod, min_periods=timeperiod)
+    std = pd.rolling_std(real, timeperiod, min_periods=timeperiod)
+    lo = ma - nbdevdn * std
+    hi = ma + nbdevup * std
+    return hi, ma, lo
 
 def update_klines(klines):
     while True:
@@ -282,7 +290,7 @@ while True:
         cci_dict[symbol] = cci
         if symbol not in cci_overbought:
             cci_overbought[symbol] = True
-        upperband, middleband, lowerband = talib.BBANDS(inputs["close"], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+        upperband, middleband, lowerband = BBANDS(inputs["close"], timeperiod=10, nbdevup=2, nbdevdn=2)
         boll_dict[symbol] = [upperband, middleband, lowerband]
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
