@@ -122,7 +122,7 @@ rsi_dict = {}
 cci_dict = {}
 boll_dict = {}
 
-def update_klines(klines, cci_history_dict):
+def update_klines(klines):
     while True:
         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         tickers = client.get_ticker()
@@ -169,9 +169,9 @@ def update_klines(klines, cci_history_dict):
                     'volume': numpy.asarray(v)
                 }
                 cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
-                if symbol not in cci_history_dict:
-                    cci_history_dict[symbol] = collections.deque(maxlen=8)
-                cci_history_dict[symbol].append(cci.item(-1))
+                #if symbol not in cci_history_dict:
+                 #   cci_history_dict[symbol] = collections.deque(maxlen=8)
+                #cci_history_dict[symbol].append(cci.item(-1))
 
 
 
@@ -208,7 +208,7 @@ else:
             BTC_symbols.append(d["symbol"])
 
 if not TESTING_MODE:
-    th = threading.Thread(target=update_klines, args=(kline_dict,cci_history_dict))
+    th = threading.Thread(target=update_klines, args=(kline_dict,))
     th.start()
     print("Waiting for initial data to populate...")
     time.sleep(20)
@@ -226,10 +226,9 @@ while True:
     print("SELLS: " + str(sell_count))
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
-        cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
+        #cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
         print(key + " Purchased Price: " + f"{value:.8f}" + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
-              " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}" + " CCI Slope: " + f"{cci_slope:.8f}"
-              + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
+              " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}" + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
         print("UPDATING " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     else:
@@ -290,18 +289,17 @@ while True:
         vol_delta = linregress(range(len(obv)), obv).slope
         vol_delta_dict[symbol] = vol_delta
 
-    sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)[-20:]
+    sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)
     for sym in sorted_vol_delta_list:
-        cci_slope = linregress(range(len(cci_history_dict[sym])), cci_history_dict[sym]).slope
+        #cci_slope = linregress(range(len(cci_history_dict[sym])), cci_history_dict[sym]).slope
         if not TESTING_MODE:
             print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym] + " EMA: " + f"{ema_dict[sym].item(-1):.8f}" +
-              " SAR: " + f"{sar_dict[sym].item(-1):.8f}" + " CCI: " + f"{cci_dict[sym].item(-1):.8f}" + " CCI Slope: " + f"{cci_slope:.8f}"
-              + " RSI: " + f"{rsi_dict[sym].item(-1):.8f}")
+              " SAR: " + f"{sar_dict[sym].item(-1):.8f}" + " CCI: " + f"{cci_dict[sym].item(-1):.8f}" + " RSI: " + f"{rsi_dict[sym].item(-1):.8f}")
         last_sar = float(sar_dict[sym].item(-1))
         last_rsi = float(rsi_dict[sym].item(-1))
         last_last_rsi = float(rsi_dict[sym].item(-2))
-        last_last_boll_l = float(boll_dict[sym][0].item(-2))
-        last_boll_l = float(boll_dict[sym][0].item(-1))
+        last_last_boll_l = float(boll_dict[sym][2].item(-2))
+        last_boll_l = float(boll_dict[sym][2].item(-1))
         try:
             last_cci = float(cci_dict[sym].item(-1))
         except IndexError:
@@ -368,9 +366,9 @@ while True:
         last_rsi = float(rsi.item(-1))
         cci = cci_dict[key]
         last_cci = float(cci.item(-1))
-        cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
-        last_boll_l = float(boll_dict[sym][0].item(-1))
-        last_boll_h = float(boll_dict[sym][2].item(-1))
+        #cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
+        last_boll_l = float(boll_dict[key][2].item(-1))
+        last_boll_h = float(boll_dict[key][0].item(-1))
         if TESTING_MODE:
             last_price = float(prices_dict[key])
         else:
