@@ -19,7 +19,7 @@ TRADE_LOGGING = True
 
 
 TESTING_MODE = False
-tick = 1000
+tick = 40
 
 LIVE_MODE = False
 precision = 5
@@ -151,7 +151,7 @@ def update_klines(klines):
             if not TESTING_MODE:
                 if symbol in blacklist or float(volume_dict[symbol]) < 100:
                     continue
-                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR)
+                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR, limit='40')
                 klines[symbol] = k
                 o = []
                 h = []
@@ -219,7 +219,7 @@ if not TESTING_MODE:
     th = threading.Thread(target=update_klines, args=(kline_dict,))
     th.start()
     print("Waiting for initial data to populate...")
-    time.sleep(30)
+    time.sleep(25)
 while True:
     if not TESTING_MODE and th.isAlive() is False:
         print("RESTARTING UPDATE")
@@ -251,7 +251,7 @@ while True:
         c = []
         v = []
         if TESTING_MODE:
-            test_window = kline_dict[symbol][tick-1000:tick]
+            test_window = kline_dict[symbol][tick-40:tick]
             if len(test_window) == 0:
                 sys.exit(0)  # test window is empty. the sim is probably done...
             for interval in test_window:
@@ -352,7 +352,7 @@ while True:
             if TRADE_LOGGING:
                 if TESTING_MODE:
                     t = datetime.datetime.utcfromtimestamp(
-                        float(kline_dict[symbol][tick - 1000:tick][-1][6]) / 1000
+                        float(kline_dict[symbol][tick - 40:tick][-1][6]) / 1000
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -409,7 +409,7 @@ while True:
             if TRADE_LOGGING:
                 if TESTING_MODE:
                     t = datetime.datetime.utcfromtimestamp(
-                        float(kline_dict[symbol][tick - 1000:tick][-1][6]) / 1000
+                        float(kline_dict[symbol][tick - 40:tick][-1][6]) / 1000
                     ).strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
