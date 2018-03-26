@@ -301,70 +301,75 @@ while True:
 
     sorted_vol_delta_list = sorted(vol_delta_dict, key=vol_delta_dict.get)
     for sym in sorted_vol_delta_list:
-        #cci_slope = linregress(range(len(cci_history_dict[sym])), cci_history_dict[sym]).slope
-        if not TESTING_MODE:
-            print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym] + " EMA: " + f"{ema_dict[sym].item(-1):.8f}" +
-              " SAR: " + f"{sar_dict[sym].item(-1):.8f}" + " CCI: " + f"{cci_dict[sym].item(-1):.8f}" + " RSI: " + f"{rsi_dict[sym].item(-1):.8f}")
-        last_sar = float(sar_dict[sym].item(-1))
-        last_rsi = float(rsi_dict[sym].item(-1))
-        last_last_rsi = float(rsi_dict[sym].item(-2))
-        last_last_boll_l = float(boll_dict[sym][2].item(-2))
-        last_boll_l = float(boll_dict[sym][2].item(-1))
-        last_boll_h = float(boll_dict[sym][0].item(-1))
         try:
-            last_cci = float(cci_dict[sym].item(-1))
-        except IndexError:
-            continue
-        last_ema = float(ema_dict[sym].item(-1))
-        last_last_price = float(kline_dict[sym][-2][4])
-        if TESTING_MODE:
-            last_price = float(prices_dict[sym])
-        else:
-            last_price = float(kline_dict[sym][-1][4])
-        if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
-                recent_purchases_dict) < 10 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
-        #if 100 < last_cci < 180 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
-        #        recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+            #cci_slope = linregress(range(len(cci_history_dict[sym])), cci_history_dict[sym]).slope
             if not TESTING_MODE:
-                if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
-                    continue
-            if VIRTUAL_MODE or TESTING_MODE:
-                buy_amount_btc = 0.3 * balance
-                wallets[sym.split("BTC")[0]] = buy_amount_btc / last_price
-                wallets[sym.split("BTC")[0]] -= (0.0005 * float(wallets[sym.split("BTC")[0]]))  # binance fee
-                balance -= buy_amount_btc
-            elif LIVE_MODE:
-                buy_amount_btc = 0.3 * float(wallets["BTC"])
-                buy = buy_amount_btc / last_price
-                step = float(filters[sym][1]["stepSize"])
-                m = float(buy) % step
-                a = float(buy) - m
-                amt_str = "{:0.0{}f}".format(a, precision)
-                order = client.order_market_buy(symbol=sym, quantity=amt_str)
-                info = client.get_account()
-                balances = info["balances"]
-                for w in balances:
-                    wallets[w["asset"]] = w["free"]
+                print("MAX VOL: " + sym + " (" + str(vol_delta_dict[sym]) + ") " + " PRICE: " + prices_dict[sym] + " EMA: " + f"{ema_dict[sym].item(-1):.8f}" +
+                  " SAR: " + f"{sar_dict[sym].item(-1):.8f}" + " CCI: " + f"{cci_dict[sym].item(-1):.8f}" + " RSI: " + f"{rsi_dict[sym].item(-1):.8f}")
+            last_sar = float(sar_dict[sym].item(-1))
+            last_rsi = float(rsi_dict[sym].item(-1))
+            last_last_rsi = float(rsi_dict[sym].item(-2))
+            last_last_boll_l = float(boll_dict[sym][2].item(-2))
+            last_boll_l = float(boll_dict[sym][2].item(-1))
+            last_boll_h = float(boll_dict[sym][0].item(-1))
+            try:
+                last_cci = float(cci_dict[sym].item(-1))
+            except IndexError:
+                continue
+            last_ema = float(ema_dict[sym].item(-1))
+            last_last_price = float(kline_dict[sym][-2][4])
+            if TESTING_MODE:
+                last_price = float(prices_dict[sym])
+            else:
+                last_price = float(kline_dict[sym][-1][4])
+            if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
+                    recent_purchases_dict) < 10 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+            #if 100 < last_cci < 180 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
+            #        recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+                if not TESTING_MODE:
+                    if sym in buy_cooldown_dict and datetime.datetime.now() < buy_cooldown_dict[sym]:
+                        continue
+                if VIRTUAL_MODE or TESTING_MODE:
+                    buy_amount_btc = 0.3 * balance
+                    wallets[sym.split("BTC")[0]] = buy_amount_btc / last_price
+                    wallets[sym.split("BTC")[0]] -= (0.0005 * float(wallets[sym.split("BTC")[0]]))  # binance fee
+                    balance -= buy_amount_btc
+                elif LIVE_MODE:
+                    buy_amount_btc = 0.3 * float(wallets["BTC"])
+                    buy = buy_amount_btc / last_price
+                    step = float(filters[sym][1]["stepSize"])
+                    m = float(buy) % step
+                    a = float(buy) - m
+                    amt_str = "{:0.0{}f}".format(a, precision)
+                    order = client.order_market_buy(symbol=sym, quantity=amt_str)
+                    info = client.get_account()
+                    balances = info["balances"]
+                    for w in balances:
+                        wallets[w["asset"]] = w["free"]
 
-            recent_purchases_dict[sym] = last_price
-            rsi_overbought[sym] = False
-            if not TESTING_MODE:
-                bm_dict[sym] = BinanceSocketManager(client)
-                conn_key = bm_dict[sym].start_multiplex_socket([sym.lower()+'@trade', sym.lower()+'@kline_2h'], process_m_message)
-                bm_dict[sym].start()
-            if TRADE_LOGGING:
-                if TESTING_MODE:
-                    t = datetime.datetime.utcfromtimestamp(
-                        float(kline_dict[symbol][tick - 40:tick][-1][6]) / 1000
-                    ).strftime('%Y-%m-%d %H:%M:%S')
-                else:
-                    t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_boll_h:.8f}", f"{last_boll_l:.8f}", f"{last_price:.8f}", wallets[sym.split("BTC")[0]], f"{balance:.8f}", f"{gain:.8f}"]
-                with open(start_time + '.csv', 'a', newline='') as trade_log:
-                    writer = csv.writer(trade_log)
-                    a = writer.writerow(trade)
-            buy_count += 1
-        cci_overbought[sym] = last_cci > 100
+                recent_purchases_dict[sym] = last_price
+                rsi_overbought[sym] = False
+                if not TESTING_MODE:
+                    bm_dict[sym] = BinanceSocketManager(client)
+                    conn_key = bm_dict[sym].start_multiplex_socket([sym.lower()+'@trade', sym.lower()+'@kline_2h'], process_m_message)
+                    bm_dict[sym].start()
+                if TRADE_LOGGING:
+                    if TESTING_MODE:
+                        t = datetime.datetime.utcfromtimestamp(
+                            float(kline_dict[symbol][tick - 40:tick][-1][6]) / 1000
+                        ).strftime('%Y-%m-%d %H:%M:%S')
+                    else:
+                        t = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                    trade = [t, "BUY", sym, f"{last_cci:.8f}", f"{last_rsi:.8f}", f"{last_ema:.8f}", f"{last_sar:.8f}", f"{last_boll_h:.8f}", f"{last_boll_l:.8f}", f"{last_price:.8f}", wallets[sym.split("BTC")[0]], f"{balance:.8f}", f"{gain:.8f}"]
+                    with open(start_time + '.csv', 'a', newline='') as trade_log:
+                        writer = csv.writer(trade_log)
+                        a = writer.writerow(trade)
+                buy_count += 1
+            cci_overbought[sym] = last_cci > 100
+        except KeyError as e:
+            print("Key error: {0}".format(e))
+            continue
+
 
     sells = []
     for key, value in recent_purchases_dict.items():
