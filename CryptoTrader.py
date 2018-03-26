@@ -123,12 +123,14 @@ rsi_dict = {}
 cci_dict = {}
 boll_dict = {}
 
+
 def BBANDS(real, timeperiod=5, nbdevup=2, nbdevdn=2):
     ma = pd.rolling_mean(real, timeperiod, min_periods=timeperiod)
-    std = pd.rolling_std(real, timeperiod, min_periods=timeperiod)
+    std = pd.rolling_std(real, timeperiod, min_periods=timeperiod, ddof=0)
     lo = ma - nbdevdn * std
     hi = ma + nbdevup * std
     return hi, ma, lo
+
 
 def update_klines(klines):
     while True:
@@ -290,7 +292,7 @@ while True:
         cci_dict[symbol] = cci
         if symbol not in cci_overbought:
             cci_overbought[symbol] = True
-        upperband, middleband, lowerband = BBANDS(inputs["close"], timeperiod=10, nbdevup=2, nbdevdn=2)
+        upperband, middleband, lowerband = BBANDS(inputs["close"], timeperiod=20, nbdevup=2, nbdevdn=2)
         boll_dict[symbol] = [upperband, middleband, lowerband]
 
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
