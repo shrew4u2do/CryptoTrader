@@ -237,7 +237,7 @@ while True:
     print("RECENT PURCHASES: ")
     for key, value in recent_purchases_dict.items():
         #cci_slope = linregress(range(len(cci_history_dict[key])), cci_history_dict[key]).slope
-        print(key + " Purchased Price: " + f"{value:.8f}" + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
+        print(key + " Purchased Price: " + f"{value[0]:.8f}" + " Current Price: " + f"{float(prices_dict[key]):.8f}" + " EMA: " + f"{ema_dict[key].item(-1):.8f}" +
               " SAR: " + f"{sar_dict[key].item(-1):.8f}" + " CCI: " + f"{cci_dict[key].item(-1):.8f}" + " RSI: " + f"{rsi_dict[key].item(-1):.8f}")
     if not TESTING_MODE:
         print("UPDATING " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -347,7 +347,8 @@ while True:
                     for w in balances:
                         wallets[w["asset"]] = w["free"]
 
-                recent_purchases_dict[sym] = last_price
+                l = [last_price, last_price - (last_price*0.03)] # stop loss of 3%
+                recent_purchases_dict[sym] = l
                 rsi_overbought[sym] = False
                 if not TESTING_MODE:
                     bm_dict[sym] = BinanceSocketManager(client)
@@ -373,7 +374,7 @@ while True:
 
     sells = []
     for key, value in recent_purchases_dict.items():
-        profit = float(prices_dict[key]) - float(value)
+        profit = float(prices_dict[key]) - float(value[0])
         sar = sar_dict[key]
         last_sar = float(sar.item(-1))
         ema = ema_dict[key]
@@ -389,7 +390,7 @@ while True:
             last_price = float(prices_dict[key])
         else:
             last_price = float(kline_dict[key][-1][4])
-        if last_price > last_boll_h or last_price < (last_boll_l - 4e-8):
+        if last_price > last_boll_h or last_price < value[1]:
         #if (last_price < last_ema and last_cci < 95) or (key in rsi_overbought and rsi_overbought[key] and last_rsi < 70) or last_cci < -200 or last_cci > 200 or cci_slope < -0.2:
             print("SELLING " + key + " at gain/loss price " + str(profit))
             if last_rsi < 70:
@@ -399,7 +400,7 @@ while True:
                 btc_gain = bought_amount * last_price
                 btc_gain -= (0.0005 * btc_gain)  # binance fee
                 balance += btc_gain
-                gain += (btc_gain - (bought_amount * float(value)))
+                gain += (btc_gain - (bought_amount * float(value[0])))
                 wallets[key.split("BTC")[0]] = 0.0
             elif LIVE_MODE:
                 step = float(filters[key][1]["stepSize"])
