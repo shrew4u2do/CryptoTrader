@@ -309,21 +309,27 @@ while True:
             last_sar = float(sar_dict[sym].item(-1))
             last_rsi = float(rsi_dict[sym].item(-1))
             last_last_rsi = float(rsi_dict[sym].item(-2))
+            last_last_last_rsi = float(rsi_dict[sym].item(-3))
             last_last_boll_l = float(boll_dict[sym][2].item(-2))
             last_boll_l = float(boll_dict[sym][2].item(-1))
             last_boll_h = float(boll_dict[sym][0].item(-1))
+            last_last_last_boll_l = float(boll_dict[sym][2].item(-3))
+            last_last_green = float(kline_dict[sym][-2][4]) > float(kline_dict[sym][-2][1])
             try:
                 last_cci = float(cci_dict[sym].item(-1))
             except IndexError:
                 continue
             last_ema = float(ema_dict[sym].item(-1))
             last_last_price = float(kline_dict[sym][-2][4])
+            last_last_last_price = float(kline_dict[sym][-3][4])
             if TESTING_MODE:
                 last_price = float(prices_dict[sym])
             else:
                 last_price = float(kline_dict[sym][-1][4])
-            if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
+            if last_last_last_price < last_last_last_boll_l and last_last_last_rsi < 30 and last_last_price > last_last_boll_l and last_last_green and last_last_rsi > last_last_last_rsi and last_price > last_boll_l and last_rsi > 30 and sym not in recent_purchases_dict and len(
                     recent_purchases_dict) < 3 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
+            #if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
+            #        recent_purchases_dict) < 3 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
             #if 100 < last_cci < 180 and last_price > last_ema and last_rsi < 70 and sym in cci_overbought and not cci_overbought[sym] and sym not in recent_purchases_dict and len(
             #        recent_purchases_dict) < 20 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
                 if not TESTING_MODE:
