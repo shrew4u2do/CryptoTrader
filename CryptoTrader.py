@@ -225,8 +225,10 @@ if not TESTING_MODE:
 while True:
     if not TESTING_MODE and th.isAlive() is False:
         print("RESTARTING UPDATE")
+        del th
         th = threading.Thread(target=update_klines, args=(kline_dict,))
         th.start()
+        time.sleep(1)
 
     if LIVE_MODE:
         gain = float(wallets["BTC"]) - float(start_balance)
