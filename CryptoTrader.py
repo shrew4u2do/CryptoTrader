@@ -134,54 +134,54 @@ def BBANDS(real, timeperiod=5, nbdevup=2, nbdevdn=2):
 
 def update_klines(klines):
     while True:
-        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        tickers = client.get_ticker()
-        prices = client.get_all_tickers()
-        for price in prices:
-            prices_dict[price["symbol"]] = price["price"]
-        for sym in tickers:
-            volume_dict[sym["symbol"]] = sym["quoteVolume"]
-        if LIVE_MODE:
-            info = client.get_account()
-            balances = info["balances"]
-            for w in balances:
-                wallets[w["asset"]] = w["free"]
-                if w["asset"] == "BTC":
-                    global balance
-                    balance = float(w["free"])
-        for symbol in BTC_symbols:
-            if not TESTING_MODE:
-                if symbol in blacklist or float(volume_dict[symbol]) < 100:
-                    continue
-                k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR, limit='40')
-                klines[symbol] = k
-                o = []
-                h = []
-                l = []
-                c = []
-                v = []
-                try:
-                    for interval in klines[symbol]:
-                        o.append(float(interval[1]))
-                        h.append(float(interval[2]))
-                        l.append(float(interval[3]))
-                        c.append(float(interval[4]))
-                        v.append(float(interval[5]))
-                except KeyError as e:
-                    print("Key error: {0}".format(e))
-                    continue
+        try:
+            print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            tickers = client.get_ticker()
+            prices = client.get_all_tickers()
+            for price in prices:
+                prices_dict[price["symbol"]] = price["price"]
+            for sym in tickers:
+                volume_dict[sym["symbol"]] = sym["quoteVolume"]
+            if LIVE_MODE:
+                info = client.get_account()
+                balances = info["balances"]
+                for w in balances:
+                    wallets[w["asset"]] = w["free"]
+                    if w["asset"] == "BTC":
+                        global balance
+                        balance = float(w["free"])
+            for symbol in BTC_symbols:
+                if not TESTING_MODE:
+                    if symbol in blacklist or float(volume_dict[symbol]) < 100:
+                        continue
+                    k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR, limit='40')
+                    klines[symbol] = k
+                    o = []
+                    h = []
+                    l = []
+                    c = []
+                    v = []
+                    try:
+                        for interval in klines[symbol]:
+                            o.append(float(interval[1]))
+                            h.append(float(interval[2]))
+                            l.append(float(interval[3]))
+                            c.append(float(interval[4]))
+                            v.append(float(interval[5]))
+                    except KeyError as e:
+                        print("Key error: {0}".format(e))
+                        continue
 
-                inputs = {
-                    'open': numpy.asarray(o),
-                    'high': numpy.asarray(h),
-                    'low': numpy.asarray(l),
-                    'close': numpy.asarray(c),
-                    'volume': numpy.asarray(v)
-                }
-                cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
-                #if symbol not in cci_history_dict:
-                 #   cci_history_dict[symbol] = collections.deque(maxlen=8)
-                #cci_history_dict[symbol].append(cci.item(-1))
+                    inputs = {
+                        'open': numpy.asarray(o),
+                        'high': numpy.asarray(h),
+                        'low': numpy.asarray(l),
+                        'close': numpy.asarray(c),
+                        'volume': numpy.asarray(v)
+                    }
+                    cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
+        except Exception as e:
+            return
 
 
 
