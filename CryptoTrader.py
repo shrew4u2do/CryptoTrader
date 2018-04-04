@@ -122,6 +122,7 @@ ema_dict = {}
 rsi_dict = {}
 cci_dict = {}
 boll_dict = {}
+hammer_dict = {}
 
 
 def BBANDS(real, timeperiod=5, nbdevup=2, nbdevdn=2):
@@ -297,6 +298,8 @@ while True:
         upperband, middleband, lowerband = BBANDS(inputs["close"], timeperiod=20, nbdevup=2, nbdevdn=2)
         boll_dict[symbol] = [upperband, middleband, lowerband]
 
+        hammer_dict[symbol] = talib.CDLHAMMER(inputs["open"], inputs["high"], inputs["low"], inputs["close"])
+
         obv = talib.OBV(inputs["close"], inputs["volume"]).tolist()
         vol_delta = linregress(range(len(obv)), obv).slope
         vol_delta_dict[symbol] = vol_delta
@@ -317,6 +320,7 @@ while True:
             last_boll_h = float(boll_dict[sym][0].item(-1))
             last_last_last_boll_l = float(boll_dict[sym][2].item(-3))
             last_last_green = float(kline_dict[sym][-2][4]) > float(kline_dict[sym][-2][1])
+            last_last_last_hammer = int(hammer_dict[sym].item(-3)) == 100
             try:
                 last_cci = float(cci_dict[sym].item(-1))
             except IndexError:
@@ -328,7 +332,7 @@ while True:
                 last_price = float(prices_dict[sym])
             else:
                 last_price = float(kline_dict[sym][-1][4])
-            if last_last_last_price < last_last_last_boll_l and last_last_last_rsi < 30 and last_last_price > last_last_boll_l and last_last_green and last_last_rsi > last_last_last_rsi and last_price > last_boll_l and last_rsi > 30 and sym not in recent_purchases_dict and len(
+            if last_last_last_hammer and last_last_last_price < last_last_last_boll_l and last_last_last_rsi < 30 and last_last_price > last_last_boll_l and last_last_green and last_last_rsi > last_last_last_rsi and last_price > last_boll_l and last_rsi > 30 and sym not in recent_purchases_dict and len(
                     recent_purchases_dict) < 3 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
             #if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
             #        recent_purchases_dict) < 3 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
