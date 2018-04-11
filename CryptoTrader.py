@@ -289,7 +289,7 @@ while True:
         sar_dict[symbol] = sar
         ema = talib.TEMA(inputs["close"], timeperiod=9)
         ema_dict[symbol] = ema
-        rsi = talib.RSI(inputs["close"]*100000, timeperiod=14)
+        rsi = talib.RSI(inputs["close"], timeperiod=14)
         rsi_dict[symbol] = rsi
         cci = talib.CCI(inputs["high"], inputs["low"], inputs["close"], timeperiod=20)
         cci_dict[symbol] = cci
