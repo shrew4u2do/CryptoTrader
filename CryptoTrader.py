@@ -332,7 +332,7 @@ while True:
                 last_price = float(prices_dict[sym])
             else:
                 last_price = float(kline_dict[sym][-1][4])
-            if last_last_last_hammer and last_last_last_price < last_last_last_boll_l and last_last_last_rsi < 30 and last_last_price > last_last_boll_l and last_last_green and last_last_rsi > last_last_last_rsi and last_price > last_boll_l and last_rsi > 30 and sym not in recent_purchases_dict and len(
+            if last_last_last_price < last_last_last_boll_l and last_last_last_rsi < 30 and last_last_price > last_last_boll_l and last_last_green and last_last_rsi > last_last_last_rsi and last_price > last_boll_l and last_rsi > 30 and sym not in recent_purchases_dict and len(
                     recent_purchases_dict) < 3 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
             #if last_last_price < last_last_boll_l and last_price > last_boll_l and last_last_rsi < 30 and last_rsi > 30 and sym not in recent_purchases_dict and len(
             #        recent_purchases_dict) < 3 and sym not in blacklist and balance > 0.001:  # BUY if the stars and moon align
