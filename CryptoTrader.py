@@ -155,7 +155,7 @@ def update_klines(klines):
                 if not TESTING_MODE:
                     if symbol in blacklist or float(volume_dict[symbol]) < 100:
                         continue
-                    k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR, limit='40')
+                    k = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1HOUR)
                     klines[symbol] = k
                     o = []
                     h = []
