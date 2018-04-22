@@ -228,8 +228,8 @@ while True:
         print("RESTARTING UPDATE")
         del th
         th = threading.Thread(target=update_klines, args=(kline_dict,))
+        time.sleep(30)
         th.start()
-        time.sleep(1)
 
     if LIVE_MODE:
         gain = float(wallets["BTC"]) - float(start_balance)
